@@ -5,6 +5,7 @@ import * as Yup from 'yup';
 import { useDispatch, useSelector } from 'react-redux';
 import { register } from './authSlice';
 import { Feather } from '@expo/vector-icons';
+import { getTheme } from '../ui/themeColors';
 
 const { width, height } = Dimensions.get('window');
 
@@ -17,21 +18,18 @@ const RegisterSchema = Yup.object({
 export default function RegisterScreen({ navigation }) {
   const dispatch = useDispatch();
   const { status, error } = useSelector(s => s.auth);
+  const dark = useSelector(s => s.theme.darkMode);
+  const colors = getTheme(dark);
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirm, setShowConfirm] = React.useState(false);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Feather name="arrow-left" size={24} color="#944545" />
-        </TouchableOpacity>
-        <Feather name="user-plus" size={60} color="#944545" />
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Join FitBuddy today</Text>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
+       
+        <Feather name="user-plus" size={60} color={colors.primary} />
+        <Text style={[styles.title, { color: colors.primary }]}>Create Account</Text>
+        <Text style={[styles.subtitle, { color: colors.muted }]}>Join FitBuddy today</Text>
       </View>
 
       <Formik
@@ -42,13 +40,13 @@ export default function RegisterScreen({ navigation }) {
         {({ handleChange, handleBlur, handleSubmit, values, errors, touched }) => (
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Username</Text>
-              <View style={[styles.inputWrapper, touched.username && errors.username && styles.inputError]}>
-                <Feather name="user" size={20} color="#944545" style={styles.inputIcon} />
+              <Text style={[styles.label, { color: colors.text }]}>Username</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.border }, touched.username && errors.username && styles.inputError]}>
+                <Feather name="user" size={20} color={colors.primary} style={styles.inputIcon} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder="Choose a username"
-                  placeholderTextColor="#aaa"
+                  placeholderTextColor={colors.placeholder}
                   onChangeText={handleChange('username')}
                   onBlur={handleBlur('username')}
                   value={values.username}
@@ -58,49 +56,49 @@ export default function RegisterScreen({ navigation }) {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <View style={[styles.inputWrapper, touched.password && errors.password && styles.inputError]}>
-                <Feather name="lock" size={20} color="#944545" style={styles.inputIcon} />
+              <Text style={[styles.label, { color: colors.text }]}>Password</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.border }, touched.password && errors.password && styles.inputError]}>
+                <Feather name="lock" size={20} color={colors.primary} style={styles.inputIcon} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder="At least 6 characters"
-                  placeholderTextColor="#aaa"
+                  placeholderTextColor={colors.placeholder}
                   secureTextEntry={!showPassword}
                   onChangeText={handleChange('password')}
                   onBlur={handleBlur('password')}
                   value={values.password}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color="#944545" />
+                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color={colors.primary} />
                 </TouchableOpacity>
               </View>
               {touched.password && errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Confirm Password</Text>
-              <View style={[styles.inputWrapper, touched.confirm && errors.confirm && styles.inputError]}>
-                <Feather name="lock" size={20} color="#944545" style={styles.inputIcon} />
+              <Text style={[styles.label, { color: colors.text }]}>Confirm Password</Text>
+              <View style={[styles.inputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.border }, touched.confirm && errors.confirm && styles.inputError]}>
+                <Feather name="lock" size={20} color={colors.primary} style={styles.inputIcon} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.text }]}
                   placeholder="Re-enter your password"
-                  placeholderTextColor="#aaa"
+                  placeholderTextColor={colors.placeholder}
                   secureTextEntry={!showConfirm}
                   onChangeText={handleChange('confirm')}
                   onBlur={handleBlur('confirm')}
                   value={values.confirm}
                 />
                 <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}>
-                  <Feather name={showConfirm ? 'eye-off' : 'eye'} size={20} color="#944545" />
+                  <Feather name={showConfirm ? 'eye-off' : 'eye'} size={20} color={colors.primary} />
                 </TouchableOpacity>
               </View>
               {touched.confirm && errors.confirm && <Text style={styles.errorText}>{errors.confirm}</Text>}
             </View>
 
-            {error && <Text style={styles.serverError}>{error}</Text>}
+            {error && <Text style={[styles.serverError, { backgroundColor: colors.dangerBg, color: colors.text }]}>{error}</Text>}
 
             <TouchableOpacity 
-              style={[styles.button, styles.primaryButton, status === 'loading' && styles.buttonDisabled]} 
+              style={[styles.button, { backgroundColor: colors.primary }, status === 'loading' && styles.buttonDisabled]} 
               onPress={handleSubmit}
               disabled={status === 'loading'}
             >
@@ -114,13 +112,13 @@ export default function RegisterScreen({ navigation }) {
               )}
             </TouchableOpacity>
 
-            <Text style={styles.loginPrompt}>Already have an account?</Text>
+            <Text style={[styles.loginPrompt, { color: colors.muted }]}>Already have an account?</Text>
             <TouchableOpacity 
-              style={[styles.button, styles.secondaryButton]} 
+              style={[styles.button, styles.secondaryButton, { backgroundColor: colors.surface, borderColor: colors.primary }]} 
               onPress={() => navigation.goBack()}
             >
-              <Feather name="log-in" size={18} color="#944545" style={{marginRight: 8}} />
-              <Text style={styles.secondaryButtonText}>Back to Login</Text>
+              {/* <Feather name="log-in" size={18} color={colors.primary} style={{marginRight: 8}} /> */}
+              <Text style={[styles.secondaryButtonText, { color: colors.primary }]}>Back to Login</Text>
             </TouchableOpacity>
           </View>
         )}

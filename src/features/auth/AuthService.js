@@ -1,15 +1,35 @@
+// Simple in-memory storage for registered users (username -> password)
+// In a real app, this would be a backend database
+const registeredUsers = {};
+
 export default {
-  login: async ({ username }) => {
+  login: async ({ username, password }) => {
     await new Promise(r => setTimeout(r, 700)); // simulate API delay
-    return { token: 'dummy-token', username };
+    
+    // Check if user exists and password matches
+    if (!registeredUsers[username]) {
+      throw new Error('Username not found. Please create an account first.');
+    }
+    
+    if (registeredUsers[username] !== password) {
+      throw new Error('Invalid password. Please try again.');
+    }
+    
+    return { token: 'dummy-token-' + Date.now(), username };
   },
 
-  // Simple mock register method - returns a token and the passed username
+  // Register method - stores credentials and returns a token
   register: async ({ username, password }) => {
-
     await new Promise(r => setTimeout(r, 700)); // simulate API delay
-    // In a real app, you'd make an API call here, validate, etc.
     
-    return { token: 'dummy-token', username };
+    // Check if username already exists
+    if (registeredUsers[username]) {
+      throw new Error('Username already exists. Please choose a different one.');
+    }
+    
+    // Store the credentials
+    registeredUsers[username] = password;
+    
+    return { token: 'dummy-token-' + Date.now(), username };
   }
 };

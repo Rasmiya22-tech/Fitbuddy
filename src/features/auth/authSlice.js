@@ -13,9 +13,16 @@ export const register = createAsyncThunk('auth/register', async (cred) => {
 
 const slice = createSlice({
   name: 'auth',
-  initialState: { token: null, username: null, status: 'idle', error: null },
+  initialState: { token: null, username: null, profilePic: null, status: 'idle', error: null },
   reducers: {
-    logout: (state) => { state.token = null; state.username = null; }
+    // Keep username/profilePic persisted locally so edits survive logout/login cycles.
+    // Only clear the token on logout so user must re-authenticate but their profile fields remain locally available.
+    logout: (state) => { state.token = null; state.status = 'idle'; state.error = null; },
+    updateProfile: (state, action) => {
+      const { username, profilePic } = action.payload || {};
+      if (typeof username !== 'undefined') state.username = username;
+      if (typeof profilePic !== 'undefined') state.profilePic = profilePic;
+    }
   },
   extraReducers: builder => {
     builder
@@ -36,5 +43,5 @@ const slice = createSlice({
   }
 });
 
-export const { logout } = slice.actions;
+export const { logout, updateProfile } = slice.actions;
 export default slice.reducer;
