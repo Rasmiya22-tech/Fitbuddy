@@ -6,6 +6,7 @@ import LoginScreen from '../features/auth/LoginScreen';
 import RegisterScreen from '../features/auth/RegisterScreen';
 import HomeScreen from '../features/exercises/HomeScreen';
 import DetailsScreen from '../features/exercises/DetailsScreen';
+import CaloriesDetailsScreen from '../features/exercises/CaloriesDetailsScreen';
 import FavouritesScreen from '../features/favourites/FavouritesScreen';
 import { useSelector } from 'react-redux';
 import ProfileScreen from '../features/auth/ProfileScreen';
@@ -26,25 +27,25 @@ function MainTabs() {
       headerRight: () => <HeaderRight username={username} />,
       headerTitleAlign: 'left',
       headerTintColor: '#944545',
-      tabBarIcon:({color,size})=>{
-        let icon='home';
-        if(route.name==='Exercises') icon='zap';
-        if(route.name==='Favourites') icon='star';
-        if(route.name==='Profile') icon='user';
-        return <Feather name={icon} color={color} size={size}/>;
+      tabBarIcon: ({ color, size }) => {
+        let icon = 'home';
+        if (route.name === 'Exercises') icon = 'zap';
+        if (route.name === 'Favourites') icon = 'star';
+        if (route.name === 'Profile') icon = 'user';
+        return <Feather name={icon} color={color} size={size} />;
       }
     })}>
-        <Tab.Screen name="Home" component={HomeScreen} options={{title: 'Home'}}/>
-        <Tab.Screen name="Exercises" component={ExercisesListScreen} options={{title: 'Exercises'}}/>
-        <Tab.Screen name="Favourites" component={FavouritesScreen} options={{title: 'Favourites'}}/>
-        <Tab.Screen name="Profile" component={ProfileScreen} options={{title: 'Profile'}}/>
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Home' }} />
+      <Tab.Screen name="Exercises" component={ExercisesListScreen} options={{ title: 'Exercises' }} />
+      <Tab.Screen name="Favourites" component={FavouritesScreen} options={{ title: 'Favourites' }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
     </Tab.Navigator>
   );
 }
 
 export default function AppNavigator() {
-  const token = useSelector(s=>s.auth.token);
-  const isDark = useSelector(s=>s.theme.darkMode);
+  const token = useSelector(s => s.auth.token);
+  const isDark = useSelector(s => s.theme.darkMode);
   const navTheme = isDark ? DarkTheme : DefaultTheme;
 
   return (
@@ -52,13 +53,18 @@ export default function AppNavigator() {
       <Stack.Navigator>
         {!token ? (
           <>
-            <Stack.Screen name="Login" component={LoginScreen} options={{headerShown:false}}/>
-            <Stack.Screen name="Register" component={RegisterScreen}/>
+            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+            <Stack.Screen
+              name="Register"
+              component={RegisterScreen}
+              options={{ headerShown: false }}
+            />
           </>
         ) : (
           <>
-            <Stack.Screen name="Main" component={MainTabs} options={{headerShown:false}}/>
-            <Stack.Screen name="Details" component={DetailsScreen}/>
+            <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
+            <Stack.Screen name="Details" component={DetailsScreen} />
+            <Stack.Screen name="Calories" component={CaloriesDetailsScreen} options={{ headerShown: false }} />
           </>
         )}
       </Stack.Navigator>
