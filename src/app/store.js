@@ -1,25 +1,23 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistReducer, persistStore } from 'redux-persist';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persistConfig } from './persist';
 import authReducer from '../features/auth/authSlice';
 import exercisesReducer from '../features/exercises/exercisesSlice';
 import favouritesReducer from '../features/favourites/favouritesSlice';
 import themeReducer from '../features/ui/themeSlice';
 import fitnessExercisesReducer from '../features/exercises/fitnessExercisesSlice';
+import waterReducer from '../features/water/waterSlice';
+import wellnessReducer from '../features/wellness/wellnessSlice';
 
 const rootReducer = combineReducers({
   auth: authReducer,
   exercises: exercisesReducer,
   favourites: favouritesReducer,
   theme: themeReducer,
-  fitnessExercises: fitnessExercisesReducer
+  fitnessExercises: fitnessExercisesReducer,
+  water: waterReducer,
+  wellness: wellnessReducer
 });
-
-const persistConfig = {
-  key: 'root', 
-  storage: AsyncStorage,
-  whitelist: ['auth', 'favourites', 'theme']
-};
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
