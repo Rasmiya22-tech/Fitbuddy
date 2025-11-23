@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { 
   View, 
   FlatList, 
@@ -6,10 +6,17 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   ScrollView,
-  Dimensions
+  Dimensions,
+  ActivityIndicator,
+  RefreshControl
 } from 'react-native';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Feather } from '@expo/vector-icons';
+import { fetchExercises } from './exercisesSlice';
+import ExerciseCard from './ExerciseCard';
+import WaterTracker from '../water/WaterTracker';
+import CaloriesBurnedCard from './CaloriesBurnedCard';
+import { getTheme } from '../ui/themeColors';
 
 const { width } = Dimensions.get('window');
 
@@ -19,7 +26,7 @@ const wellnessTips = [
     id: '1',
     title: 'Stay Hydrated',
     description: 'Drink at least 8 glasses of water daily to maintain proper hydration and boost metabolism.',
-    icon: 'droplets',
+    icon: 'water',
     color: '#3498db'
   },
   {
@@ -33,7 +40,7 @@ const wellnessTips = [
     id: '3',
     title: 'Balanced Diet',
     description: 'Consume proteins, carbs, and healthy fats in proper proportions for optimal health.',
-    icon: 'apple',
+    icon: 'gift',
     color: '#27ae60'
   },
   {
@@ -59,91 +66,190 @@ const wellnessTips = [
   }
 ];
 
-// Daily stats mock data
-const dailyStats = {
-  calories: { burned: 420, goal: 500 },
-  steps: { count: 8234, goal: 10000 },
-  water: { cups: 6, goal: 8 },
-  workouts: { completed: 1, goal: 1 }
-};
-
 export default function HomeScreen({ navigation }) {
+  const dispatch = useDispatch();
   const username = useSelector(s => s.auth.username);
-  const [selectedTip, setSelectedTip] = useState(null);
+  const dark = useSelector(s => s.theme.darkMode);
+  const colors = getTheme(dark);
+  const exercises = useSelector(s => s.exercises.items);
+  const exercisesStatus = useSelector(s => s.exercises.status);
+  const exercisesError = useSelector(s => s.exercises.error);
+  const waterCups = useSelector(s => s.water.cups);
+  const waterGoal = useSelector(s => s.water.dailyGoal);
+  const favourites = useSelector(s => s.favourites.items);
+  const [selectedTip, setSelectedTip] = React.useState(null);
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  // Calculate dynamic stats based on fetched data
+  const dynamicStats = {
+    exercises: exercises.length,
+    workouts: favourites.length, // Number of saved workouts
+    water: { cups: waterCups, goal: waterGoal },
+    difficulty: exercises.reduce((acc, ex) => {
+      if (ex.difficulty === 'beginner' || ex.difficulty === 'easy') acc.easy++;
+      else if (ex.difficulty === 'intermediate') acc.intermediate++;
+      else if (ex.difficulty === 'advanced' || ex.difficulty === 'expert') acc.advanced++;
+      return acc;
+    }, { easy: 0, intermediate: 0, advanced: 0 })
+  };
+
+  useEffect(() => {
+    if (exercisesStatus === 'idle') {
+      dispatch(fetchExercises());
+    }
+  }, [dispatch, exercisesStatus]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    dispatch(fetchExercises()).finally(() => setRefreshing(false));
+  };
+
+  const handleExercisePress = (item) => {
+    navigation.navigate('Details', { item });
+  };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={[styles.container, { backgroundColor: colors.background }]} 
+      showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+    >
       {/* Header with greeting */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }] }>
         <View>
-          <Text style={styles.greeting}>Hello, {username || 'Fitness Enthusiast'}! 👋</Text>
-          <Text style={styles.date}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</Text>
+          <Text style={[styles.greeting, { color: colors.text }]}>Hello, {username || 'Fitness Enthusiast'}! 👋</Text>
+          <Text style={[styles.date, { color: colors.muted }]}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</Text>
         </View>
-        <View style={styles.headerIcon}>
-          <Feather name="heart" size={32} color="#e74c3c" />
+        <View style={[styles.headerIcon, { backgroundColor: colors.primary + '20' }]}>
+          <Feather name="heart" size={32} color={colors.primary} />
         </View>
       </View>
 
       {/* Daily Stats */}
       <View style={styles.statsContainer}>
-        <Text style={styles.sectionTitle}>Today's Progress</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Today's Activity</Text>
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Feather name="zap" size={24} color="#e74c3c" />
-            <Text style={styles.statValue}>{dailyStats.calories.burned}/{dailyStats.calories.goal}</Text>
-            <Text style={styles.statLabel}>Calories</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="zap" size={24} color={colors.primary} />
+            <Text style={[styles.statValue, { color: colors.text }]}>{dynamicStats.exercises}</Text>
+            <Text style={[styles.statLabel, { color: colors.muted }]}>Exercises</Text>
           </View>
-          <View style={styles.statCard}>
-            <Feather name="move" size={24} color="#3498db" />
-            <Text style={styles.statValue}>{dailyStats.steps.count}</Text>
-            <Text style={styles.statLabel}>Steps</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="heart" size={24} color="#e74c3c" />
+            <Text style={[styles.statValue, { color: colors.text }]}>{dynamicStats.workouts}</Text>
+            <Text style={[styles.statLabel, { color: colors.muted }]}>Saved</Text>
           </View>
-          <View style={styles.statCard}>
-            <Feather name="droplets" size={24} color="#2980b9" />
-            <Text style={styles.statValue}>{dailyStats.water.cups}/{dailyStats.water.goal}</Text>
-            <Text style={styles.statLabel}>Water</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="water" size={24} color="#3498db" />
+            <Text style={[styles.statValue, { color: colors.text }]}>{dynamicStats.water.cups}/{dynamicStats.water.goal}</Text>
+            <Text style={[styles.statLabel, { color: colors.muted }]}>Water</Text>
           </View>
-          <View style={styles.statCard}>
-            <Feather name="check-circle" size={24} color="#27ae60" />
-            <Text style={styles.statValue}>{dailyStats.workouts.completed}/{dailyStats.workouts.goal}</Text>
-            <Text style={styles.statLabel}>Workouts</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="trending-up" size={24} color="#f39c12" />
+            <Text style={[styles.statValue, { color: colors.text }]}>{dynamicStats.difficulty.intermediate}</Text>
+            <Text style={[styles.statLabel, { color: colors.muted }]}>Mid-Level</Text>
           </View>
         </View>
       </View>
 
+      {/* Water Tracker Component */}
+      <WaterTracker />
+
+      {/* Calories Burned Component */}
+      <CaloriesBurnedCard navigation={navigation} />
+
+      {/* Featured Exercises Section */}
+      <View style={styles.exercisesContainer}>
+        <View style={styles.exercisesHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Featured Workouts</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Exercises')}>
+            <Text style={[styles.viewAll, { color: colors.primary }]}>View All</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Loading State */}
+        {exercisesStatus === 'loading' && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.muted }]}>Loading workouts...</Text>
+          </View>
+        )}
+
+        {/* Error State */}
+        {exercisesStatus === 'failed' && (
+          <View style={[styles.errorContainer, { backgroundColor: colors.dangerBg }]}>
+            <Feather name="alert-circle" size={24} color="#ff6b6b" />
+            <Text style={[styles.errorText, { color: '#ff6b6b' }]}>Failed to load workouts</Text>
+            <TouchableOpacity 
+              style={[styles.retryButton, { backgroundColor: colors.primary }]}
+              onPress={handleRefresh}
+            >
+              <Text style={{ color: '#fff', fontWeight: '600' }}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Exercises List */}
+        {exercisesStatus === 'succeeded' && exercises.length > 0 && (
+          <FlatList
+            data={exercises.slice(0, 3)}
+            keyExtractor={item => item.id}
+            scrollEnabled={false}
+            renderItem={({ item }) => (
+              <ExerciseCard 
+                item={item} 
+                onPress={() => handleExercisePress(item)}
+                showFavButton={true}
+              />
+            )}
+          />
+        )}
+
+        {/* Empty State */}
+        {exercisesStatus === 'succeeded' && exercises.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <Feather name="inbox" size={48} color={colors.muted} />
+            <Text style={[styles.emptyText, { color: colors.muted }]}>No workouts available</Text>
+          </View>
+        )}
+      </View>
+
       {/* Quick Actions */}
       <View style={styles.quickActionsContainer}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
         <View style={styles.quickActionsGrid}>
-          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Exercises')}>
-            <Feather name="zap" size={28} color="#944545" />
-            <Text style={styles.actionText}>Find Workout</Text>
+          <TouchableOpacity 
+            style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => navigation.navigate('Exercises')}
+          >
+            <Feather name="zap" size={28} color={colors.primary} />
+            <Text style={[styles.actionText, { color: colors.text }]}>Find Workout</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Feather name="droplets" size={28} color="#3498db" />
-            <Text style={styles.actionText}>Log Water</Text>
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="heart" size={28} color={colors.primary} />
+            <Text style={[styles.actionText, { color: colors.text }]}>Favourites</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Feather name="pie-chart" size={28} color="#f39c12" />
-            <Text style={styles.actionText}>Track Diet</Text>
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="pie-chart" size={28} color={colors.primary} />
+            <Text style={[styles.actionText, { color: colors.text }]}>Track Diet</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Feather name="bar-chart-2" size={28} color="#27ae60" />
-            <Text style={styles.actionText}>Stats</Text>
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="bar-chart-2" size={28} color={colors.primary} />
+            <Text style={[styles.actionText, { color: colors.text }]}>Stats</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Wellness Tips */}
       <View style={styles.tipsContainer}>
-        <Text style={styles.sectionTitle}>Wellness Tips</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Wellness Tips</Text>
         <FlatList
           data={wellnessTips}
           keyExtractor={item => item.id}
           scrollEnabled={false}
           renderItem={({ item }) => (
             <TouchableOpacity 
-              style={styles.tipCard}
+              style={[styles.tipCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={() => setSelectedTip(selectedTip === item.id ? null : item.id)}
               activeOpacity={0.7}
             >
@@ -151,15 +257,15 @@ export default function HomeScreen({ navigation }) {
                 <Feather name={item.icon} size={24} color={item.color} />
               </View>
               <View style={styles.tipContent}>
-                <Text style={styles.tipTitle}>{item.title}</Text>
+                <Text style={[styles.tipTitle, { color: colors.text }]}>{item.title}</Text>
                 {selectedTip === item.id && (
-                  <Text style={styles.tipDescription}>{item.description}</Text>
+                  <Text style={[styles.tipDescription, { color: colors.muted }]}>{item.description}</Text>
                 )}
               </View>
               <Feather 
                 name={selectedTip === item.id ? 'chevron-up' : 'chevron-down'} 
                 size={20} 
-                color="#944545" 
+                color={colors.primary} 
               />
             </TouchableOpacity>
           )}
@@ -168,11 +274,13 @@ export default function HomeScreen({ navigation }) {
 
       {/* Motivation Section */}
       <View style={styles.motivationContainer}>
-        <View style={styles.motivationCard}>
-          <Feather name="award" size={40} color="#f39c12" />
-          <Text style={styles.motivationText}>You're doing great! Keep up the consistency and you'll achieve your fitness goals. 💪</Text>
+        <View style={[styles.motivationCard, { backgroundColor: colors.primary }]}>
+          <Feather name="award" size={40} color={colors.surface} />
+          <Text style={[styles.motivationText, { color: colors.surface }]}>You're doing great! Keep up the consistency and you'll achieve your fitness goals. 💪</Text>
         </View>
       </View>
+
+      <View style={{ height: 20 }} />
     </ScrollView>
   );
 }
@@ -180,109 +288,147 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
     padding: 16,
     marginBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   greeting: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#333',
   },
   date: {
     fontSize: 13,
-    color: '#999',
     marginTop: 4,
   },
   headerIcon: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#ffe0e0',
     justifyContent: 'center',
     alignItems: 'center',
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#333',
     marginBottom: 12,
+    paddingHorizontal: 12,
   },
   statsContainer: {
-    paddingHorizontal: 12,
     marginBottom: 16,
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    paddingHorizontal: 12,
   },
   statCard: {
     width: (width - 40) / 2,
-    backgroundColor: '#fff',
     borderRadius: 10,
     padding: 12,
     marginBottom: 10,
     alignItems: 'center',
     elevation: 2,
+    borderWidth: 1,
   },
   statValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#333',
     marginTop: 8,
   },
   statLabel: {
     fontSize: 12,
-    color: '#999',
     marginTop: 4,
   },
-  quickActionsContainer: {
+  exercisesContainer: {
+    marginBottom: 16,
+  },
+  exercisesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  viewAll: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  errorContainer: {
+    marginHorizontal: 12,
+    borderRadius: 10,
+    padding: 16,
+    alignItems: 'center',
+  },
+  errorText: {
+    marginTop: 8,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  retryButton: {
+    marginTop: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  quickActionsContainer: {
     marginBottom: 16,
   },
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    paddingHorizontal: 12,
   },
   actionButton: {
     width: (width - 40) / 2,
-    backgroundColor: '#fff',
     borderRadius: 10,
     padding: 16,
     marginBottom: 10,
     alignItems: 'center',
     elevation: 2,
-    borderWidth: 1.5,
-    borderColor: '#f0f0f0',
+    borderWidth: 1,
   },
   actionText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#333',
     marginTop: 8,
   },
   tipsContainer: {
-    paddingHorizontal: 12,
     marginBottom: 16,
   },
   tipCard: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
     borderRadius: 10,
     padding: 12,
+    marginHorizontal: 12,
     marginBottom: 10,
     alignItems: 'center',
     elevation: 2,
+    borderWidth: 1,
   },
   tipIcon: {
     width: 50,
@@ -298,11 +444,9 @@ const styles = StyleSheet.create({
   tipTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#333',
   },
   tipDescription: {
     fontSize: 12,
-    color: '#666',
     marginTop: 6,
     lineHeight: 16,
   },
@@ -311,7 +455,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   motivationCard: {
-    backgroundColor: '#944545',
     borderRadius: 10,
     padding: 16,
     alignItems: 'center',
@@ -319,7 +462,6 @@ const styles = StyleSheet.create({
   motivationText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
     marginTop: 12,
     textAlign: 'center',
     lineHeight: 20,

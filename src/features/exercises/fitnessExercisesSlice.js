@@ -44,3 +44,4 @@ const slice = createSlice({
 
 export const { setFilters, clearFilters } = slice.actions;
 export default slice.reducer;
+    
